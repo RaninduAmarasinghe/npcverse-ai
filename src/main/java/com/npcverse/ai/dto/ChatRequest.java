@@ -1,7 +1,11 @@
 package com.npcverse.ai.dto;
 
 public class ChatRequest {
+
     private String message;
+
+    public ChatRequest() {}
+
     public String getMessage() {
         return message;
     }

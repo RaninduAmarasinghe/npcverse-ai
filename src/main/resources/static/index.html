@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Barnaby's Tavern</title>
+
+    <style>
+        body {
+            font-family: Garamond, serif;
+            background: #2c1e16;
+            color: #f4e1d2;
+            display: flex;
+            justify-content: center;
+            padding: 30px;
+        }
+        #container {
+            width: 600px;
+        }
+        #chat {
+            background: #3e2723;
+            border: 2px solid #5d4037;
+            padding: 15px;
+            height: 400px;
+            overflow-y: auto;
+            border-radius: 8px;
+        }
+        input {
+            width: 80%;
+            padding: 10px;
+        }
+        button {
+            padding: 10px;
+            background: #8d6e63;
+            border: none;
+            color: white;
+        }
+        .system { color: #ff5252; }
+    </style>
+</head>
+
+<body>
+<div id="container">
+    <h1>Barnaby's Tavern</h1>
+    <div id="chat">
+        <p><i>Barnaby wipes a mug behind the counter.</i></p>
+    </div>
+    <br>
+    <input id="msg" placeholder="Say something..." />
+    <button onclick="send()">Speak</button>
+</div>
+
+<script>
+    async function send() {
+        const input = document.getElementById("msg");
+        const chat = document.getElementById("chat");
+        const text = input.value.trim();
+        if (!text) return;
+
+        chat.innerHTML += `<p><b>You:</b> ${text}</p>`;
+        input.value = "";
+
+        try {
+            const res = await fetch("/npc/chat", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ message: text })
+            });
+
+            if (!res.ok) {
+                throw new Error("Server returned " + res.status);
+            }
+
+            const reply = await res.text();
+            chat.innerHTML += `<p><b>Barnaby:</b> ${reply}</p>`;
+
+        } catch (e) {
+            chat.innerHTML += `<p class="system"><b>System:</b> Barnaby grunts and ignores you.</p>`;
+            console.error(e);
+        }
+
+        chat.scrollTop = chat.scrollHeight;
+    }
+</script>
+
+</body>
+</html>

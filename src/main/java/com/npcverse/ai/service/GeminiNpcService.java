@@ -1,28 +1,34 @@
 package com.npcverse.ai.service;
+
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-import java.util.*;
+
+import java.util.List;
+import java.util.Map;
 
 @Service
 public class GeminiNpcService {
 
-    private static final String GEMINI_URL =
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
+    @Value("${gemini.api.key}")
+    private String apiKey;
 
     private final RestTemplate restTemplate = new RestTemplate();
 
-    public String getNpcResponse() {
+    // ✅ CORRECT MODEL & API VERSION (confirmed by curl)
+    private static final String GEMINI_URL =
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 
-        String mission =
-                "The player must travel to the northern forest, defeat the bandits, " +
-                        "and rescue the captured villagers.";
+    // ===================== MAIN NPC RESPONSE =====================
+    public String getNpcResponse(String userMessage) {
 
         String prompt =
-                "You are a medieval fantasy NPC. Explain the mission using different wording, " +
-                        "but keep the meaning the same. Do not add new objectives.\n\n" +
-                        "Mission:\n" + mission;
+                "You are Barnaby, a medieval tavern owner.\n" +
+                        "Stay in character. Use medieval slang.\n\n" +
+                        "Player says: " + userMessage;
 
+        // ✅ THIS is where your JSON goes
         Map<String, Object> body = Map.of(
                 "contents", List.of(
                         Map.of(
@@ -33,22 +39,41 @@ public class GeminiNpcService {
                 )
         );
 
-        HttpHeaders headers = new HttpHeaders();
+        return callGemini(body);
+    }
 
-        headers.setContentType(MediaType.APPLICATION_JSON);
+    // ===================== CALL GEMINI =====================
+    private String callGemini(Map<String, Object> body) {
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
 
-        HttpEntity<Map<String, Object>> entity =
-                new HttpEntity<>(body, headers);
+            HttpEntity<Map<String, Object>> entity =
+                    new HttpEntity<>(body, headers);
 
-        String url = GEMINI_URL + "?key=" + System.getenv("GEMINI_API_KEY");
+            String url = GEMINI_URL + "?key=" + apiKey;
 
-        ResponseEntity<Map> response =
-                restTemplate.postForEntity(url, entity, Map.class);
+            ResponseEntity<Map> response =
+                    restTemplate.postForEntity(url, entity, Map.class);
 
-        Map candidate = (Map) ((List<?>) response.getBody().get("candidates")).get(0);
-        Map content = (Map) candidate.get("content");
-        Map part = (Map) ((List<?>) content.get("parts")).get(0);
+            return extractText(response.getBody());
 
-        return part.get("text").toString();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "Barnaby mutters: 'The spirits be silent today...'";
+        }
+    }
+
+    // ===================== PARSE RESPONSE =====================
+    private String extractText(Map<String, Object> body) {
+        try {
+            List<?> candidates = (List<?>) body.get("candidates");
+            Map<?, ?> content = (Map<?, ?>) candidates.get(0);
+            Map<?, ?> message = (Map<?, ?>) content.get("content");
+            List<?> parts = (List<?>) message.get("parts");
+            return parts.get(0).toString().replace("{text=", "").replace("}", "");
+        } catch (Exception e) {
+            return "Barnaby scratches his beard, saying naught.";
+        }
     }
 }

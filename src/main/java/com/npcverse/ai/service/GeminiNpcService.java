@@ -7,7 +7,50 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
 import java.util.Map;
+@Service
+public class GeminiNpcService { // Keeping name for compatibility
 
+    @Value("${ollama.url}")
+    private String ollamaUrl;
+
+    @Value("${ollama.model}")
+    private String modelName;
+
+    private final RestTemplate restTemplate = new RestTemplate();
+
+    private final String missionContext =
+            "MISSION: Silas the Rat stole a silver locket and is hiding at the Abandoned Mill. Reward: 20 gold.";
+
+    public String getNpcResponse(String userMessage) {
+        String systemInstruction = "You are Barnaby, a medieval tavern owner. " +
+                "Respond to the player using this MISSION DATA: " + missionContext +
+                ". Stay in character. User: " + userMessage;
+
+        // Ollama JSON format
+        Map<String, Object> body = Map.of(
+                "model", modelName,
+                "prompt", systemInstruction,
+                "stream", false // Get a single string instead of a stream
+        );
+
+        return callOllama(body);
+    }
+
+    private String callOllama(Map<String, Object> body) {
+        try {
+            // Send request to localhost:11434
+            ResponseEntity<Map> response = restTemplate.postForEntity(ollamaUrl, body, Map.class);
+
+            // Ollama returns text in a field called "response"
+            return response.getBody().get("response").toString();
+        } catch (Exception e) {
+            System.err.println("Ollama Error: " + e.getMessage());
+            return "Barnaby grunts: 'My head hurts... come back later.'";
+        }
+    }
+}
+
+/*
 @Service
 public class GeminiNpcService {
 
@@ -76,4 +119,4 @@ public class GeminiNpcService {
             return "Barnaby scratches his beard, saying naught.";
         }
     }
-}
+} */

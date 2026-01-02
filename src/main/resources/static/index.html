@@ -2,13 +2,13 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Barnaby's Tavern</title>
+    <title>Secure Link: Thisara</title>
 
     <style>
         body {
-            font-family: Garamond, serif;
-            background: #2c1e16;
-            color: #f4e1d2;
+            font-family: 'Courier New', Courier, monospace; /* Terminal style font */
+            background: #0d0d0d; /* Pitch black background */
+            color: #00ff41; /* Hacker green text */
             display: flex;
             justify-content: center;
             padding: 30px;
@@ -16,37 +16,64 @@
         #container {
             width: 600px;
         }
+        h1 {
+            border-bottom: 2px solid #00ff41;
+            padding-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
         #chat {
-            background: #3e2723;
-            border: 2px solid #5d4037;
-            padding: 15px;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            padding: 20px;
             height: 400px;
             overflow-y: auto;
-            border-radius: 8px;
+            border-radius: 4px;
+            box-shadow: 0 0 10px rgba(0, 255, 65, 0.2);
+        }
+        .message-row { margin-bottom: 10px; }
+        .user-label { color: #00d2ff; font-weight: bold; } /* Blue for User */
+        .npc-label { color: #ff0055; font-weight: bold; }  /* Red/Pink for Thisara */
+
+        .input-area {
+            display: flex;
+            margin-top: 15px;
+            gap: 10px;
         }
         input {
-            width: 80%;
-            padding: 10px;
+            flex-grow: 1;
+            padding: 12px;
+            background: #222;
+            border: 1px solid #444;
+            color: white;
+            font-family: inherit;
         }
         button {
-            padding: 10px;
-            background: #8d6e63;
+            padding: 12px 25px;
+            background: #008f11;
             border: none;
-            color: white;
+            color: black;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
         }
-        .system { color: #ff5252; }
+        button:hover { background: #00ff41; }
+        .system { color: #555; font-style: italic; }
     </style>
 </head>
 
 <body>
 <div id="container">
-    <h1>Barnaby's Tavern</h1>
+    <h1>/// SECURE_CONNECTION: THISARA</h1>
     <div id="chat">
-        <p><i>Barnaby wipes a mug behind the counter.</i></p>
+        <p class="system"><i>> Establishing encrypted link...</i></p>
+        <p class="system"><i>> Thisara lights a cigarette and looks at his phone.</i></p>
     </div>
-    <br>
-    <input id="msg" placeholder="Say something..." />
-    <button onclick="send()">Speak</button>
+
+    <div class="input-area">
+        <input id="msg" placeholder="Type your message..." onkeydown="if(event.key==='Enter') send()" />
+        <button onclick="send()">SEND</button>
+    </div>
 </div>
 
 <script>
@@ -56,25 +83,29 @@
         const text = input.value.trim();
         if (!text) return;
 
-        chat.innerHTML += `<p><b>You:</b> ${text}</p>`;
+        // 1. Add User Message (Blue)
+        chat.innerHTML += `<div class="message-row"><span class="user-label">YOU:</span> ${text}</div>`;
         input.value = "";
 
+        // Auto-scroll to bottom
+        chat.scrollTop = chat.scrollHeight;
+
         try {
-            const res = await fetch("/npc/chat", {
+            const res = await fetch("http://localhost:8080/npc/chat", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ message: text })
             });
 
-            if (!res.ok) {
-                throw new Error("Server returned " + res.status);
-            }
+            if (!res.ok) throw new Error("Connection Lost");
 
             const reply = await res.text();
-            chat.innerHTML += `<p><b>Barnaby:</b> ${reply}</p>`;
+
+            // 2. Add NPC Message (Red/Pink)
+            chat.innerHTML += `<div class="message-row"><span class="npc-label">THISARA:</span> ${reply}</div>`;
 
         } catch (e) {
-            chat.innerHTML += `<p class="system"><b>System:</b> Barnaby grunts and ignores you.</p>`;
+            chat.innerHTML += `<p class="system">>> ERROR: Signal jammed. Try again.</p>`;
             console.error(e);
         }
 

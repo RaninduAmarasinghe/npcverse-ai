@@ -1,14 +1,14 @@
 package com.npcverse.ai.service;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.*;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.List;
 import java.util.Map;
+
 @Service
-public class GeminiNpcService { // Keeping name for compatibility
+public class GeminiNpcService {
 
     @Value("${ollama.url}")
     private String ollamaUrl;
@@ -18,19 +18,24 @@ public class GeminiNpcService { // Keeping name for compatibility
 
     private final RestTemplate restTemplate = new RestTemplate();
 
+    // 1. UPDATED MISSION: Modern heist context
     private final String missionContext =
-            "MISSION: Silas the Rat stole a silver locket and is hiding at the Abandoned Mill. Reward: 20 gold.";
+            "MISSION: We need to steal a Red Sports Car parked at the Colombo City Hotel. " +
+                    "The keys are with the valet. Payoff: 50,000 LKR.";
 
     public String getNpcResponse(String userMessage) {
-        String systemInstruction = "You are Barnaby, a medieval tavern owner. " +
-                "Respond to the player using this MISSION DATA: " + missionContext +
-                ". Stay in character. User: " + userMessage;
+        // 2. UPDATED PERSONA: Thisara (Modern Fixer/Street Smart)
+        String systemInstruction = "You are Thisara, a street-smart fixer and car thief. " +
+                "Context: " + missionContext + ". " +
+                "Reply to the user briefly in character. Be cool and casual. " +
+                "Do not include 'Thisara:' or 'System:' in your reply. " +
+                "User says: " + userMessage;
 
-        // Ollama JSON format
+        // 3. Build Request
         Map<String, Object> body = Map.of(
                 "model", modelName,
                 "prompt", systemInstruction,
-                "stream", false // Get a single string instead of a stream
+                "stream", false
         );
 
         return callOllama(body);
@@ -38,18 +43,19 @@ public class GeminiNpcService { // Keeping name for compatibility
 
     private String callOllama(Map<String, Object> body) {
         try {
-            // Send request to localhost:11434
             ResponseEntity<Map> response = restTemplate.postForEntity(ollamaUrl, body, Map.class);
 
-            // Ollama returns text in a field called "response"
-            return response.getBody().get("response").toString();
+            if (response.getBody() != null && response.getBody().containsKey("response")) {
+                return response.getBody().get("response").toString().trim();
+            }
+            return "Thisara looks away, ignoring you.";
+
         } catch (Exception e) {
             System.err.println("Ollama Error: " + e.getMessage());
-            return "Barnaby grunts: 'My head hurts... come back later.'";
+            return "Thisara is busy on a call.";
         }
     }
 }
-
 /*
 @Service
 public class GeminiNpcService {
